@@ -1,0 +1,1 @@
+- [Rena Henna stack rewrite](rena-henna-rewrite.md) — Expo/React Native → Vite+React+Tailwind; Supabase lib files kept as-is; phone-width layout pattern used throughout.

@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Rena Henna",
+    "slug": "rena-henna-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#E75480"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.renahenna.app"
+    },
+    "android": {
+      "package": "com.renahenna.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#E75480"
+      },
+      "permissions": [
+        "NOTIFICATIONS",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
+    },
+    "plugins": [
+      "expo-notifications"
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
