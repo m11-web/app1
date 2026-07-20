@@ -26,7 +26,11 @@ export interface AuthResult {
 }
 
 // ─── Sign Up ──────────────────────────────────────────────────────────────────
-export async function signUp(email: string, password: string, fullName: string): Promise<AuthResult> {
+export async function signUp(
+  email: string,
+  password: string,
+  fullName: string
+): Promise<AuthResult & { needsConfirmation?: boolean }> {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return { profile: null, error: 'Please enter a valid email address.' };
@@ -38,27 +42,56 @@ export async function signUp(email: string, password: string, fullName: string):
     options: { data: { full_name: fullName } },
   });
 
-  if (error) return { profile: null, error: error.message };
+  if (error) {
+    // Already registered
+    if (error.message.toLowerCase().includes('already registered')) {
+      return { profile: null, error: 'Yeh email pehle se registered hai. Sign In karo.' };
+    }
+    return { profile: null, error: error.message };
+  }
+
+  // Email confirmation required (identities array empty means already exists)
+  if (data.user && data.user.identities?.length === 0) {
+    return { profile: null, error: 'Yeh email pehle se registered hai. Sign In karo.' };
+  }
 
   if (data.user) {
-    await supabase.from('profiles').insert({
+    // Try to insert profile (ignore error if already exists)
+    await supabase.from('profiles').upsert({
       id: data.user.id,
       email,
       full_name: fullName,
       role: 'customer',
-    });
+    }, { onConflict: 'id' });
   }
 
-  return {
-    profile: {
-      id: data.user?.id ?? '',
+  // If session exists → confirmed immediately (email confirm disabled in Supabase)
+  if (data.session) {
+    const profile: Profile = {
+      id: data.user!.id,
       email,
       full_name: fullName,
       role: 'customer',
       created_at: new Date().toISOString(),
+    };
+    return { profile, error: null };
+  }
+
+  // Email confirmation required
+  return { profile: null, error: null, needsConfirmation: true };
+}
+
+// ─── Google Sign In ───────────────────────────────────────────────────────────
+export async function signInWithGoogle(): Promise<{ error: string | null }> {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+      queryParams: { access_type: 'offline', prompt: 'consent' },
     },
-    error: null,
-  };
+  });
+  if (error) return { error: error.message };
+  return { error: null };
 }
 
 // ─── Sign In ──────────────────────────────────────────────────────────────────

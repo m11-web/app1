@@ -22,19 +22,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Load initial profile (local session or Supabase session)
     getCurrentProfile()
       .then(setProfile)
       .catch(() => {})
       .finally(() => setLoading(false));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        // Only clear if not a local session (admin/employee)
-        const local = localStorage.getItem('rena_local_session');
-        if (!local) setProfile(null);
-      } else if (session?.user) {
-        const p = await getCurrentProfile();
-        setProfile(p);
+      if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        return;
+      }
+
+      if (session?.user) {
+        // Try to fetch existing profile
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (existing) {
+          setProfile(existing);
+        } else {
+          // New Google user — create profile automatically
+          const newProfile: Profile = {
+            id: session.user.id,
+            email: session.user.email ?? '',
+            full_name: session.user.user_metadata?.full_name
+              || session.user.user_metadata?.name
+              || session.user.email?.split('@')[0]
+              || 'User',
+            role: 'customer',
+            created_at: new Date().toISOString(),
+          };
+          await supabase.from('profiles').upsert(newProfile, { onConflict: 'id' });
+          setProfile(newProfile);
+        }
       }
     });
 
