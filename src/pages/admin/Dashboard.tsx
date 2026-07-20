@@ -32,6 +32,7 @@ export default function AdminDashboard() {
   ];
 
   const quickActions = [
+    { emoji: '📦', label: 'Manage Products', path: '/admin/products' },
     { emoji: '🏷️', label: 'Manage Banners', path: '/admin/banners' },
     { emoji: '🔔', label: 'Send Notification', path: '/admin/notifications' },
   ];

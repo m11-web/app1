@@ -47,9 +47,8 @@ export default function Signup() {
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 block">Email Address</label>
-          <input className={inputCls} type="email" placeholder="your@gmail.com" value={email}
+          <input className={inputCls} type="email" placeholder="your@email.com" value={email}
             onChange={e => setEmail(e.target.value)} autoCapitalize="none" />
-          <p className="text-xs text-gray-400 mt-1">Only @gmail.com addresses accepted</p>
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 block">Password</label>

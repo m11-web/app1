@@ -16,6 +16,7 @@ import Profile from './pages/Profile';
 import AdminDashboard from './pages/admin/Dashboard';
 import BannerManager from './pages/admin/BannerManager';
 import NotificationSender from './pages/admin/NotificationSender';
+import ProductManager from './pages/admin/ProductManager';
 import EmployeeDashboard from './pages/employee/Dashboard';
 
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/admin/banners" element={<BannerManager />} />
                   <Route path="/admin/notifications" element={<NotificationSender />} />
+                  <Route path="/admin/products" element={<ProductManager />} />
                   <Route path="/employee" element={<EmployeeDashboard />} />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>

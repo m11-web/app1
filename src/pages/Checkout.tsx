@@ -13,6 +13,7 @@ export default function Checkout() {
   const { profile } = useAuth();
 
   const [name, setName] = useState(profile?.full_name || '');
+  const [email, setEmail] = useState(profile?.email || '');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [payMethod, setPayMethod] = useState<'cod' | 'bank'>('cod');
@@ -34,7 +35,7 @@ export default function Checkout() {
       await placeOrder(
         {
           customer_name: name.trim(),
-          customer_email: profile?.email || 'guest@gmail.com',
+          customer_email: profile?.email || email.trim() || 'guest',
           whatsapp_number: phone.trim(),
           address: address.trim(),
           payment_method: payMethod,
@@ -85,6 +86,12 @@ export default function Checkout() {
             <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 block">Full Name *</label>
             <input className={inputCls} placeholder="Your full name" value={name} onChange={e => setName(e.target.value)} />
           </div>
+          {!profile && (
+            <div>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 block">Email Address</label>
+              <input className={inputCls} type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} autoCapitalize="none" />
+            </div>
+          )}
           <div>
             <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 block">WhatsApp Number *</label>
             <input className={inputCls} placeholder="03XX-XXXXXXX" value={phone} onChange={e => setPhone(e.target.value)} type="tel" />

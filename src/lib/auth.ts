@@ -17,8 +17,9 @@ export interface AuthResult {
 
 // ─── Sign Up ──────────────────────────────────────────────────────────────────
 export async function signUp(email: string, password: string, fullName: string): Promise<AuthResult> {
-  if (!email.toLowerCase().endsWith('@gmail.com')) {
-    return { profile: null, error: 'Only @gmail.com addresses are allowed for sign-up.' };
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { profile: null, error: 'Please enter a valid email address.' };
   }
 
   const { data, error } = await supabase.auth.signUp({
