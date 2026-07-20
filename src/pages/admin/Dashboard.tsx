@@ -35,6 +35,7 @@ export default function AdminDashboard() {
     { emoji: '📦', label: 'Manage Products', path: '/admin/products' },
     { emoji: '🏷️', label: 'Manage Banners', path: '/admin/banners' },
     { emoji: '🔔', label: 'Send Notification', path: '/admin/notifications' },
+    { emoji: '⚙️', label: 'Settings & Employees', path: '/admin/settings' },
   ];
 
   const statusColor: Record<string, string> = {
@@ -50,6 +51,9 @@ export default function AdminDashboard() {
       <div className="bg-primary px-5 pt-12 pb-5 flex items-center gap-4">
         <button onClick={() => nav(-1)} className="bg-white/20 text-white w-9 h-9 rounded-full flex items-center justify-center font-bold">←</button>
         <h1 className="text-white font-black text-xl flex-1">Admin Dashboard</h1>
+        <button onClick={() => nav('/')} className="bg-white/20 text-white text-xs font-bold px-3 py-2 rounded-full flex items-center gap-1.5">
+          🛍️ Store Preview
+        </button>
       </div>
 
       {loading ? (

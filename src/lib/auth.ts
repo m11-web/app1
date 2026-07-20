@@ -1,13 +1,23 @@
 import { supabase } from './supabase';
 import { Profile, Role } from './types';
 
-// ─── Local credentials for admin / employee accounts ─────────────────────────
-// These accounts exist in the profiles table with custom IDs (not Supabase auth UUIDs).
-// Password is verified here locally; profile data is fetched from the DB.
+// ─── Local Auth Session (persist admin/employee login across page refresh) ────
+const LOCAL_SESSION_KEY = 'rena_local_session';
 
-const LOCAL_CREDS: { email: string; password: string }[] = [
-  { email: 'haris@renahenna.com', password: 'haris17482' },
-];
+export function saveLocalSession(profile: Profile) {
+  localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(profile));
+}
+
+export function loadLocalSession(): Profile | null {
+  try {
+    const raw = localStorage.getItem(LOCAL_SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+export function clearLocalSession() {
+  localStorage.removeItem(LOCAL_SESSION_KEY);
+}
 
 export interface AuthResult {
   profile: Profile | null;
@@ -55,24 +65,21 @@ export async function signUp(email: string, password: string, fullName: string):
 export async function signIn(email: string, password: string): Promise<AuthResult> {
   const emailLower = email.toLowerCase().trim();
 
-  // 1. Check local credentials (admin / employee accounts)
-  const localCred = LOCAL_CREDS.find(
-    (c) => c.email.toLowerCase() === emailLower && c.password === password
-  );
+  // 1. Check if this is an admin/employee account (has local_password in profiles)
+  const { data: localProfile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('email', emailLower)
+    .in('role', ['admin', 'employee'])
+    .single();
 
-  if (localCred) {
-    // Fetch the real profile from DB so name, role, etc. are accurate
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('email', emailLower)
-      .single();
-
-    if (profileError || !profile) {
-      return { profile: null, error: 'Profile not found in database. Contact admin.' };
+  if (localProfile) {
+    // Verify password against DB
+    if (localProfile.local_password !== password) {
+      return { profile: null, error: 'Incorrect password.' };
     }
-
-    return { profile, error: null, isLocalAuth: true };
+    saveLocalSession(localProfile);
+    return { profile: localProfile, error: null, isLocalAuth: true };
   }
 
   // 2. Regular Supabase auth (customers)
@@ -90,11 +97,25 @@ export async function signIn(email: string, password: string): Promise<AuthResul
 
 // ─── Sign Out ─────────────────────────────────────────────────────────────────
 export async function signOut(): Promise<void> {
+  clearLocalSession();
   await supabase.auth.signOut();
 }
 
 // ─── Get Current Profile ──────────────────────────────────────────────────────
 export async function getCurrentProfile(): Promise<Profile | null> {
+  // First check local session (admin/employee)
+  const local = loadLocalSession();
+  if (local) {
+    // Re-fetch from DB to get latest data (in case password/name changed)
+    const { data } = await supabase.from('profiles').select('*').eq('id', local.id).single();
+    if (data) {
+      saveLocalSession(data); // refresh stored session
+      return data;
+    }
+    return local;
+  }
+
+  // Then check Supabase session (customers)
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
@@ -107,11 +128,15 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   return data ?? null;
 }
 
-// ─── Add Local Credential (for employee accounts added via admin) ─────────────
-// Call this when admin creates a new employee so they can log in
-export function addLocalCredential(email: string, password: string) {
-  const exists = LOCAL_CREDS.find(c => c.email.toLowerCase() === email.toLowerCase());
-  if (!exists) {
-    LOCAL_CREDS.push({ email: email.toLowerCase(), password });
-  }
+// ─── Change Password (Admin/Employee) ────────────────────────────────────────
+export async function changeLocalPassword(profileId: string, currentPassword: string, newPassword: string): Promise<{ error: string | null }> {
+  // Verify current password
+  const { data: profile } = await supabase.from('profiles').select('local_password').eq('id', profileId).single();
+  if (!profile) return { error: 'Profile not found.' };
+  if (profile.local_password !== currentPassword) return { error: 'Current password is incorrect.' };
+  if (newPassword.length < 6) return { error: 'New password must be at least 6 characters.' };
+
+  const { error } = await supabase.from('profiles').update({ local_password: newPassword }).eq('id', profileId);
+  if (error) return { error: error.message };
+  return { error: null };
 }

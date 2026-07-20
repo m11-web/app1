@@ -50,8 +50,9 @@ export default function Profile() {
   const menuItems = [
     ...(profile.role === 'admin' ? [
       { emoji: '📊', label: 'Admin Dashboard', action: () => nav('/admin') },
+      { emoji: '📦', label: 'Manage Products', action: () => nav('/admin/products') },
       { emoji: '🏷️', label: 'Manage Banners', action: () => nav('/admin/banners') },
-      { emoji: '🔔', label: 'Send Notification', action: () => nav('/admin/notifications') },
+      { emoji: '⚙️', label: 'Settings & Employees', action: () => nav('/admin/settings') },
     ] : []),
     ...(profile.role === 'employee' ? [
       { emoji: '📦', label: 'Employee Dashboard', action: () => nav('/employee') },

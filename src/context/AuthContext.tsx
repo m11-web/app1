@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Profile } from '../lib/types';
 import { supabase } from '../lib/supabase';
-import { getCurrentProfile } from '../lib/auth';
+import { getCurrentProfile, clearLocalSession } from '../lib/auth';
 
 interface AuthContextType {
   profile: Profile | null;
@@ -29,7 +29,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
-        setProfile(null);
+        // Only clear if not a local session (admin/employee)
+        const local = localStorage.getItem('rena_local_session');
+        if (!local) setProfile(null);
       } else if (session?.user) {
         const p = await getCurrentProfile();
         setProfile(p);
@@ -40,8 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    clearLocalSession();
     setProfile(null);
+    await supabase.auth.signOut();
   };
 
   return (
