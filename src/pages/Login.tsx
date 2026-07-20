@@ -90,11 +90,6 @@ export default function Login() {
           Continue as Guest
         </button>
 
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 text-xs text-gray-500 dark:text-gray-400 space-y-1">
-          <p className="font-bold text-gray-600 dark:text-gray-300">Staff Login:</p>
-          <p>Admin: admin@renahenna.com / admin123</p>
-          <p>Employee: employee@renahenna.com / emp123</p>
-        </div>
       </div>
     </div>
   );
