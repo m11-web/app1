@@ -1,60 +1,187 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+} from 'react-native';
+import { useRouter } from 'expo-router';
 import { Product, getCurrentPrice, isFriday } from '../lib/types';
 import { useCart } from '../context/CartContext';
+import { COLORS } from '../constants/colors';
+import { useTheme } from '../context/ThemeContext';
+
+const PLACEHOLDER = 'https://placehold.co/300x200/E75480/white?text=🌿';
 
 export default function ProductCard({ product }: { product: Product }) {
-  const nav = useNavigate();
+  const router = useRouter();
   const { addItem } = useCart();
+  const { isDark } = useTheme();
   const price = getCurrentPrice(product);
   const hasDiscount = product.discount_percent > 0;
   const outOfStock = product.stock_quantity === 0;
   const friday = isFriday();
 
+  const cardBg = isDark ? COLORS.cardDark : COLORS.cardLight;
+  const borderColor = isDark ? COLORS.borderDark : COLORS.borderLight;
+  const textColor = isDark ? COLORS.textDark : COLORS.textLight;
+  const catColor = isDark ? COLORS.gray500 : COLORS.gray400;
+
   return (
-    <div
-      className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 cursor-pointer active:scale-[0.98] transition-transform"
-      onClick={() => nav(`/shop/${product.id}`)}
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: cardBg, borderColor }]}
+      onPress={() => router.push(`/shop/${product.id}` as any)}
+      activeOpacity={0.92}
     >
-      <div className="relative">
-        <img
-          src={product.image_url || 'https://placehold.co/300x200/E75480/white?text=🌿'}
-          alt={product.name}
-          className="w-full h-40 object-cover"
-          onError={e => { (e.target as HTMLImageElement).src = 'https://placehold.co/300x200/E75480/white?text=🌿'; }}
+      <View style={styles.imageWrap}>
+        <Image
+          source={{ uri: product.image_url || PLACEHOLDER }}
+          style={styles.image}
+          defaultSource={{ uri: PLACEHOLDER }}
         />
         {hasDiscount && !outOfStock && (
-          <span className="absolute top-2 left-2 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">
-            {friday ? '🌟 FRI' : `-${product.discount_percent}%`}
-          </span>
+          <View style={styles.discountBadge}>
+            <Text style={styles.discountText}>
+              {friday ? '🌟 FRI' : `-${product.discount_percent}%`}
+            </Text>
+          </View>
         )}
         {outOfStock && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <span className="text-white font-bold text-sm bg-black/50 px-3 py-1 rounded-full">Out of Stock</span>
-          </div>
+          <View style={styles.outOfStockOverlay}>
+            <Text style={styles.outOfStockText}>Out of Stock</Text>
+          </View>
         )}
-      </div>
-      <div className="p-3">
-        <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">{product.category}</p>
-        <p className="font-bold text-gray-900 dark:text-white text-sm leading-snug line-clamp-2 mb-2">{product.name}</p>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="font-extrabold text-primary text-base">Rs. {price}</span>
+      </View>
+
+      <View style={styles.info}>
+        <Text style={[styles.category, { color: catColor }]}>{product.category}</Text>
+        <Text style={[styles.name, { color: textColor }]} numberOfLines={2}>
+          {product.name}
+        </Text>
+        <View style={styles.priceRow}>
+          <Text style={styles.price}>Rs. {price}</Text>
           {hasDiscount && (
-            <span className="text-[11px] text-gray-400 line-through">Rs. {product.retail_price}</span>
+            <Text style={styles.originalPrice}>Rs. {product.retail_price}</Text>
           )}
-        </div>
-        <button
-          className={`w-full py-2 rounded-xl text-xs font-bold transition-colors ${
-            outOfStock
-              ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
-              : 'bg-primary hover:bg-primary-dark text-white active:scale-95 transition-transform'
-          }`}
-          onClick={e => { e.stopPropagation(); if (!outOfStock) addItem(product); }}
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.addBtn,
+            outOfStock && styles.addBtnDisabled,
+          ]}
+          onPress={() => { if (!outOfStock) addItem(product); }}
           disabled={outOfStock}
+          activeOpacity={0.8}
         >
-          {outOfStock ? 'Out of Stock' : '+ Add to Cart'}
-        </button>
-      </div>
-    </div>
+          <Text style={[styles.addBtnText, outOfStock && styles.addBtnTextDisabled]}>
+            {outOfStock ? 'Out of Stock' : '+ Add to Cart'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  imageWrap: {
+    position: 'relative',
+  },
+  image: {
+    width: '100%',
+    height: 150,
+    resizeMode: 'cover',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: COLORS.primary,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  discountText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  outOfStockOverlay: {
+    position: 'absolute',
+    inset: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  outOfStockText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  info: {
+    padding: 12,
+  },
+  category: {
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  name: {
+    fontWeight: '700',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  price: {
+    color: COLORS.primary,
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  originalPrice: {
+    color: COLORS.gray400,
+    fontSize: 11,
+    textDecorationLine: 'line-through',
+  },
+  addBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  addBtnDisabled: {
+    backgroundColor: COLORS.gray100,
+  },
+  addBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  addBtnTextDisabled: {
+    color: COLORS.gray400,
+  },
+});

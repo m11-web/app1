@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "renahenna",
     "userInterfaceStyle": "automatic",
     "splash": {
       "backgroundColor": "#E75480"
@@ -26,10 +27,12 @@
       ]
     },
     "plugins": [
-      "expo-notifications"
+      "expo-notifications",
+      "expo-router"
     ],
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     }
   }
 }

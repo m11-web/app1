@@ -1,25 +1,74 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  StatusBar,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { COLORS } from '../constants/colors';
+import { useTheme } from '../context/ThemeContext';
 
 interface Props {
   title: string;
   right?: React.ReactNode;
-  bg?: string;
   dark?: boolean;
 }
 
-export default function BackHeader({ title, right, bg = 'bg-white dark:bg-gray-900', dark }: Props) {
-  const nav = useNavigate();
+const STATUS_BAR_HEIGHT = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 44;
+
+export default function BackHeader({ title, right, dark }: Props) {
+  const router = useRouter();
+  const { isDark } = useTheme();
+
+  const bgColor = dark ? COLORS.primary : isDark ? COLORS.cardDark : COLORS.cardLight;
+  const textColor = dark ? '#fff' : isDark ? '#fff' : COLORS.gray900;
+  const btnBg = dark ? 'rgba(255,255,255,0.2)' : isDark ? COLORS.gray800 : COLORS.gray100;
+
   return (
-    <div className={`${bg} px-4 pt-12 pb-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800`}>
-      <button
-        onClick={() => nav(-1)}
-        className={`w-9 h-9 flex items-center justify-center rounded-full ${dark ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white'}`}
+    <View style={[styles.container, { backgroundColor: bgColor, paddingTop: STATUS_BAR_HEIGHT + 8 }]}>
+      <TouchableOpacity
+        onPress={() => router.back()}
+        style={[styles.backBtn, { backgroundColor: btnBg }]}
+        activeOpacity={0.7}
       >
-        ←
-      </button>
-      <h1 className={`font-extrabold text-lg ${dark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{title}</h1>
-      <div className="w-9">{right}</div>
-    </div>
+        <Text style={[styles.backArrow, { color: textColor }]}>←</Text>
+      </TouchableOpacity>
+      <Text style={[styles.title, { color: textColor }]}>{title}</Text>
+      <View style={styles.rightSlot}>{right ?? null}</View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backArrow: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  rightSlot: {
+    width: 36,
+    alignItems: 'flex-end',
+  },
+});

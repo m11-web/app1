@@ -28,7 +28,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems(prev => {
       const existing = prev.find(i => i.product.id === product.id);
       if (existing) {
-        return prev.map(i => i.product.id === product.id ? { ...i, quantity: i.quantity + qty } : i);
+        return prev.map(i =>
+          i.product.id === product.id ? { ...i, quantity: i.quantity + qty } : i
+        );
       }
       return [...prev, { product, quantity: qty }];
     });
@@ -42,7 +44,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (qty <= 0) {
       setItems(prev => prev.filter(i => i.product.id !== productId));
     } else {
-      setItems(prev => prev.map(i => i.product.id === productId ? { ...i, quantity: qty } : i));
+      setItems(prev =>
+        prev.map(i => (i.product.id === productId ? { ...i, quantity: qty } : i))
+      );
     }
   }, []);
 

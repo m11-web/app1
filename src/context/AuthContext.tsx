@@ -22,7 +22,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load initial profile (local session or Supabase session)
     getCurrentProfile()
       .then(setProfile)
       .catch(() => {})
@@ -35,7 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (session?.user) {
-        // Try to fetch existing profile
         const { data: existing } = await supabase
           .from('profiles')
           .select('*')
@@ -45,14 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (existing) {
           setProfile(existing);
         } else {
-          // New Google user — create profile automatically
           const newProfile: Profile = {
             id: session.user.id,
             email: session.user.email ?? '',
-            full_name: session.user.user_metadata?.full_name
-              || session.user.user_metadata?.name
-              || session.user.email?.split('@')[0]
-              || 'User',
+            full_name:
+              session.user.user_metadata?.full_name ||
+              session.user.user_metadata?.name ||
+              session.user.email?.split('@')[0] ||
+              'User',
             role: 'customer',
             created_at: new Date().toISOString(),
           };
@@ -66,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleSignOut = async () => {
-    clearLocalSession();
+    await clearLocalSession();
     setProfile(null);
     await supabase.auth.signOut();
   };

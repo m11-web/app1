@@ -1,44 +1,114 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+} from 'react-native';
+import { useRouter, usePathname } from 'expo-router';
 import { useCart } from '../context/CartContext';
+import { COLORS } from '../constants/colors';
+import { useTheme } from '../context/ThemeContext';
+
+const tabs = [
+  { path: '/', emoji: '🏠', label: 'Home' },
+  { path: '/shop', emoji: '🛍️', label: 'Shop' },
+  { path: '/cart', emoji: '🛒', label: 'Cart', hasBadge: true },
+  { path: '/profile', emoji: '👤', label: 'Profile' },
+] as const;
 
 export default function BottomNav() {
-  const nav = useNavigate();
-  const { pathname } = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const { totalItems } = useCart();
+  const { isDark } = useTheme();
 
-  const tabs = [
-    { path: '/', emoji: '🏠', label: 'Home' },
-    { path: '/shop', emoji: '🛍️', label: 'Shop' },
-    { path: '/cart', emoji: '🛒', label: 'Cart', badge: totalItems },
-    { path: '/profile', emoji: '👤', label: 'Profile' },
-  ];
+  const bg = isDark ? COLORS.cardDark : COLORS.cardLight;
+  const borderColor = isDark ? COLORS.borderDark : COLORS.borderLight;
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex z-40">
+    <View style={[styles.container, { backgroundColor: bg, borderTopColor: borderColor }]}>
       {tabs.map(tab => {
-        const active = pathname === tab.path || (tab.path === '/shop' && pathname.startsWith('/shop'));
+        const active =
+          pathname === tab.path ||
+          (tab.path === '/shop' && pathname.startsWith('/shop'));
+        const badge = tab.hasBadge ? totalItems : 0;
+
         return (
-          <button
+          <TouchableOpacity
             key={tab.path}
-            onClick={() => nav(tab.path)}
-            className="flex-1 flex flex-col items-center pt-3 pb-5 gap-0.5 relative cursor-pointer"
+            onPress={() => router.push(tab.path as any)}
+            style={styles.tab}
+            activeOpacity={0.7}
           >
-            <span className="text-xl leading-none">{tab.emoji}</span>
-            <span className={`text-[10px] font-semibold mt-0.5 ${active ? 'text-primary' : 'text-gray-400 dark:text-gray-500'}`}>
+            <View style={styles.iconWrap}>
+              <Text style={styles.emoji}>{tab.emoji}</Text>
+              {!!badge && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.label, { color: active ? COLORS.primary : COLORS.gray400 }]}>
               {tab.label}
-            </span>
-            {!!tab.badge && (
-              <span className="absolute top-2 left-1/2 translate-x-1 bg-primary text-white text-[9px] font-black rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
-                {tab.badge > 9 ? '9+' : tab.badge}
-              </span>
-            )}
-            {active && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary rounded-full" />
-            )}
-          </button>
+            </Text>
+            {active && <View style={styles.activeLine} />}
+          </TouchableOpacity>
         );
       })}
-    </nav>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 4,
+    position: 'relative',
+  },
+  iconWrap: {
+    position: 'relative',
+  },
+  emoji: {
+    fontSize: 20,
+    lineHeight: 24,
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  activeLine: {
+    position: 'absolute',
+    bottom: 0,
+    width: 24,
+    height: 2,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+  },
+});
