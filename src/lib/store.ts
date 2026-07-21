@@ -48,9 +48,12 @@ export async function placeOrder(order: Omit<Order, 'id' | 'created_at' | 'items
   if (orderError) throw orderError;
 
   const orderItems = items.map((item) => ({
-    ...item,
+    product_id: item.product_id,
+    product_name: item.product_name,
+    quantity: item.quantity,
+    unit_price: item.unit_price,
+    manufacturing_price: item.manufacturing_price,
     order_id: orderData.id,
-    profit: item.unit_price - item.manufacturing_price,
   }));
 
   const { error: itemsError } = await supabase.from('order_items').insert(orderItems);

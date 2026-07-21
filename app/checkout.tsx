@@ -19,6 +19,11 @@ import BackHeader from '../src/components/BackHeader';
 import Spinner from '../src/components/Spinner';
 import { COLORS, getThemeColors } from '../src/constants/colors';
 
+const PROVINCES = [
+  'Punjab', 'Sindh', 'Khyber Pakhtunkhwa', 'Balochistan',
+  'Islamabad Capital Territory', 'Azad Kashmir', 'Gilgit-Baltistan',
+];
+
 export default function CheckoutScreen() {
   const router = useRouter();
   const { items, clearCart, totalPrice } = useCart();
@@ -29,8 +34,10 @@ export default function CheckoutScreen() {
   const [name, setName] = useState(profile?.full_name || '');
   const [email, setEmail] = useState(profile?.email || '');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [payMethod, setPayMethod] = useState<'cod' | 'bank'>('cod');
+  const [city, setCity] = useState('');
+  const [province, setProvince] = useState('');
+  const [showProvinces, setShowProvinces] = useState(false);
+  const [streetAddress, setStreetAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,19 +50,20 @@ export default function CheckoutScreen() {
   }
 
   const handleOrder = async () => {
-    if (!name.trim() || !phone.trim() || !address.trim()) {
+    if (!name.trim() || !phone.trim() || !city.trim() || !province || !streetAddress.trim()) {
       setError('Please fill all required fields.'); return;
     }
     setError('');
     setLoading(true);
+    const fullAddress = `${streetAddress.trim()}, ${city.trim()}, ${province}, Pakistan`;
     try {
       await placeOrder(
         {
           customer_name: name.trim(),
           customer_email: profile?.email || email.trim() || 'guest',
           whatsapp_number: phone.trim(),
-          address: address.trim(),
-          payment_method: payMethod,
+          address: fullAddress,
+          payment_method: 'cod',
           shipping_type: 'Standard',
           shipping_fee: shipping,
           subtotal: totalPrice,
@@ -89,7 +97,6 @@ export default function CheckoutScreen() {
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
-          {/* Guest notice */}
           {!profile && (
             <View style={[styles.notice, { borderColor: '#fde68a' }]}>
               <Text style={{ color: '#a16207', fontSize: 13 }}>
@@ -102,51 +109,101 @@ export default function CheckoutScreen() {
           <View style={cardStyle}>
             <Text style={[styles.sectionTitle, { color: tc.text }]}>Delivery Details</Text>
             <View style={{ gap: 14, marginTop: 14 }}>
+
               <View>
                 <Text style={[styles.label, { color: tc.textSec }]}>Full Name *</Text>
                 <TextInput style={inputStyle} placeholder="Your full name" placeholderTextColor={COLORS.gray400} value={name} onChangeText={setName} />
               </View>
+
               {!profile && (
                 <View>
                   <Text style={[styles.label, { color: tc.textSec }]}>Email Address</Text>
                   <TextInput style={inputStyle} placeholder="your@email.com" placeholderTextColor={COLORS.gray400} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
                 </View>
               )}
+
               <View>
                 <Text style={[styles.label, { color: tc.textSec }]}>WhatsApp Number *</Text>
                 <TextInput style={inputStyle} placeholder="03XX-XXXXXXX" placeholderTextColor={COLORS.gray400} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
               </View>
+
+              {/* Country — fixed */}
               <View>
-                <Text style={[styles.label, { color: tc.textSec }]}>Full Address *</Text>
-                <TextInput style={[inputStyle, { height: 80, textAlignVertical: 'top' }]} placeholder="Street, city, province" placeholderTextColor={COLORS.gray400} value={address} onChangeText={setAddress} multiline numberOfLines={3} />
+                <Text style={[styles.label, { color: tc.textSec }]}>Country</Text>
+                <View style={[inputStyle, styles.fixedField]}>
+                  <Text style={{ fontSize: 18 }}>🇵🇰</Text>
+                  <Text style={[styles.fixedText, { color: tc.text }]}>Pakistan</Text>
+                  <View style={styles.fixedBadge}>
+                    <Text style={styles.fixedBadgeText}>Fixed</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Province picker */}
+              <View>
+                <Text style={[styles.label, { color: tc.textSec }]}>Province *</Text>
+                <TouchableOpacity
+                  style={[inputStyle, styles.pickerBtn]}
+                  onPress={() => setShowProvinces(s => !s)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.pickerText, { color: province ? tc.text : COLORS.gray400 }]}>
+                    {province || 'Select province...'}
+                  </Text>
+                  <Text style={{ color: COLORS.gray400, fontSize: 16 }}>{showProvinces ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+                {showProvinces && (
+                  <View style={[styles.dropdown, { backgroundColor: tc.card, borderColor: tc.border }]}>
+                    {PROVINCES.map(p => (
+                      <TouchableOpacity
+                        key={p}
+                        style={[styles.dropdownItem, { borderBottomColor: tc.border }, province === p && { backgroundColor: 'rgba(231,84,128,0.06)' }]}
+                        onPress={() => { setProvince(p); setShowProvinces(false); }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: province === p ? COLORS.primary : tc.text }]}>{p}</Text>
+                        {province === p && <Text style={{ color: COLORS.primary }}>✓</Text>}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              {/* City */}
+              <View>
+                <Text style={[styles.label, { color: tc.textSec }]}>City *</Text>
+                <TextInput style={inputStyle} placeholder="e.g. Lahore, Karachi, Islamabad" placeholderTextColor={COLORS.gray400} value={city} onChangeText={setCity} />
+              </View>
+
+              {/* Street address */}
+              <View>
+                <Text style={[styles.label, { color: tc.textSec }]}>Street Address *</Text>
+                <TextInput
+                  style={[inputStyle, { height: 70, textAlignVertical: 'top' }]}
+                  placeholder="House no., street, area..."
+                  placeholderTextColor={COLORS.gray400}
+                  value={streetAddress}
+                  onChangeText={setStreetAddress}
+                  multiline
+                  numberOfLines={3}
+                />
               </View>
             </View>
           </View>
 
-          {/* Payment method */}
+          {/* Payment method — COD only */}
           <View style={cardStyle}>
             <Text style={[styles.sectionTitle, { color: tc.text }]}>Payment Method</Text>
-            <View style={styles.payGrid}>
-              {(['cod', 'bank'] as const).map(method => (
-                <TouchableOpacity
-                  key={method}
-                  onPress={() => setPayMethod(method)}
-                  style={[styles.payOption, { borderColor: payMethod === method ? COLORS.primary : tc.border, backgroundColor: payMethod === method ? 'rgba(231,84,128,0.05)' : tc.inputBg }]}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.payText, { color: payMethod === method ? COLORS.primary : tc.textSec }]}>
-                    {method === 'cod' ? '💵 Cash on Delivery' : '🏦 Bank Transfer'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {payMethod === 'bank' && (
-              <View style={[styles.bankInfo, { backgroundColor: isDark ? 'rgba(59,130,246,0.1)' : '#eff6ff' }]}>
-                <Text style={[styles.bankTitle, { color: isDark ? '#93c5fd' : '#1d4ed8' }]}>Bank Details</Text>
-                <Text style={[styles.bankText, { color: isDark ? '#93c5fd' : '#1d4ed8' }]}>Account: Rena Henna</Text>
-                <Text style={[styles.bankText, { color: isDark ? '#93c5fd' : '#1d4ed8' }]}>Please send screenshot on WhatsApp after transfer.</Text>
+            <View style={[styles.codBox, { backgroundColor: isDark ? 'rgba(34,197,94,0.08)' : '#f0fdf4', borderColor: COLORS.green500 }]}>
+              <Text style={{ fontSize: 28 }}>💵</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.codTitle, { color: isDark ? '#86efac' : '#15803d' }]}>Cash on Delivery</Text>
+                <Text style={[styles.codSub, { color: isDark ? '#4ade80' : '#16a34a' }]}>Pay when your order arrives</Text>
               </View>
-            )}
+              <View style={styles.codCheck}>
+                <Text style={{ color: COLORS.green500, fontWeight: '900', fontSize: 16 }}>✓</Text>
+              </View>
+            </View>
           </View>
 
           {/* Order summary */}
@@ -172,7 +229,7 @@ export default function CheckoutScreen() {
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryLabel, { color: tc.textSec }]}>Shipping</Text>
                 <Text style={[styles.summaryValue, { color: shipping === 0 ? COLORS.green500 : tc.text }]}>
-                  {shipping === 0 ? 'FREE' : `Rs. ${shipping}`}
+                  {shipping === 0 ? 'FREE 🎉' : `Rs. ${shipping}`}
                 </Text>
               </View>
               <View style={styles.summaryRow}>
@@ -184,7 +241,7 @@ export default function CheckoutScreen() {
 
           {!!error && (
             <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
+              <Text style={styles.errorText}>⚠️ {error}</Text>
             </View>
           )}
 
@@ -213,12 +270,19 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 15, fontWeight: '800' },
   label: { fontSize: 12, fontWeight: '600', marginBottom: 6 },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14 },
-  payGrid: { flexDirection: 'row', gap: 12, marginTop: 14 },
-  payOption: { flex: 1, borderWidth: 2, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  payText: { fontWeight: '700', fontSize: 13, textAlign: 'center' },
-  bankInfo: { marginTop: 12, borderRadius: 12, padding: 14 },
-  bankTitle: { fontWeight: '700', fontSize: 14, marginBottom: 4 },
-  bankText: { fontSize: 13 },
+  fixedField: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  fixedText: { flex: 1, fontSize: 14, fontWeight: '600' },
+  fixedBadge: { backgroundColor: COLORS.gray100, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  fixedBadgeText: { color: COLORS.gray500, fontSize: 10, fontWeight: '700' },
+  pickerBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  pickerText: { fontSize: 14 },
+  dropdown: { borderWidth: 1, borderRadius: 12, marginTop: 4, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 4 },
+  dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1 },
+  dropdownItemText: { fontSize: 14 },
+  codBox: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 14, borderWidth: 2, borderRadius: 16, padding: 16 },
+  codTitle: { fontSize: 14, fontWeight: '800' },
+  codSub: { fontSize: 12, marginTop: 2 },
+  codCheck: { width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.green500, alignItems: 'center', justifyContent: 'center' },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   summaryItemName: { flex: 1, fontSize: 13, marginRight: 12 },
   summaryItemPrice: { fontSize: 13, fontWeight: '600' },
@@ -228,7 +292,7 @@ const styles = StyleSheet.create({
   totalValue: { fontSize: 15, fontWeight: '800', color: COLORS.primary },
   divider: { borderTopWidth: 1, marginTop: 10, paddingTop: 10, gap: 8 },
   errorBox: { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 12, padding: 14 },
-  errorText: { color: COLORS.red500, fontSize: 13 },
+  errorText: { color: COLORS.red500, fontSize: 13, fontWeight: '600' },
   placeOrderBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 18, alignItems: 'center', shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   placeOrderBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
 });
