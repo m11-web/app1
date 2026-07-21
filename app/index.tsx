@@ -4,6 +4,8 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  Image,
   StyleSheet,
   Platform,
   StatusBar,
@@ -11,8 +13,8 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
-import { getProducts } from '../src/lib/store';
-import { Product, isFriday } from '../src/lib/types';
+import { getProducts, getBanners } from '../src/lib/store';
+import { Product, AppBanner, isFriday } from '../src/lib/types';
 import ProductCard from '../src/components/ProductCard';
 import BottomNav from '../src/components/BottomNav';
 import Spinner from '../src/components/Spinner';
@@ -20,18 +22,31 @@ import { COLORS, getThemeColors } from '../src/constants/colors';
 
 const STATUS_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 44;
 
+// Module-level flag — survives React remounts/navigation, resets on full page reload
+let _bannerPopupShown = false;
+
 export default function HomeScreen() {
   const router = useRouter();
   const { profile } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
   const tc = getThemeColors(isDark);
   const [products, setProducts] = useState<Product[]>([]);
+  const [banner, setBanner] = useState<AppBanner | null>(null);
+  const [showPopup, setShowPopup] = useState(false);
   const [loading, setLoading] = useState(true);
   const friday = isFriday();
 
   useEffect(() => {
-    getProducts()
-      .then(prods => setProducts(prods))
+    Promise.all([getProducts(), getBanners()])
+      .then(([prods, banners]) => {
+        setProducts(prods);
+        // Show popup only once per app session
+        if (banners.length > 0 && !_bannerPopupShown) {
+          _bannerPopupShown = true;
+          setBanner(banners[0]);
+          setShowPopup(true);
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -139,6 +154,39 @@ export default function HomeScreen() {
       </ScrollView>
 
       <BottomNav />
+
+      {/* Popup Banner — shows only once per app session */}
+      <Modal visible={showPopup && !!banner} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowPopup(false)} activeOpacity={1} />
+          <View style={[styles.modalSheet, { backgroundColor: tc.card }]}>
+            {banner?.image_url ? (
+              <Image source={{ uri: banner.image_url }} style={styles.bannerImage} />
+            ) : (
+              <View style={styles.bannerPlaceholder}>
+                <Text style={{ fontSize: 60 }}>🎉</Text>
+              </View>
+            )}
+            <View style={styles.bannerBadge}>
+              <Text style={styles.bannerBadgeText}>🔥 SPECIAL OFFER</Text>
+            </View>
+            <View style={styles.modalBody}>
+              <Text style={[styles.bannerTitle, { color: tc.text }]}>{banner?.title}</Text>
+              <Text style={[styles.bannerSubtitle, { color: tc.textSec }]}>{banner?.subtitle}</Text>
+              <TouchableOpacity
+                style={styles.primaryBtn}
+                onPress={() => { setShowPopup(false); router.push('/shop'); }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.primaryBtnText}>Shop Now →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowPopup(false)} style={styles.skipBtn}>
+                <Text style={styles.skipBtnText}>Skip</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -191,4 +239,19 @@ const styles = StyleSheet.create({
   bottomBanner: { borderRadius: 16, padding: 20, alignItems: 'center' },
   bottomBannerTitle: { color: COLORS.yellow400, fontWeight: '800', fontSize: 14, marginBottom: 4 },
   bottomBannerSub: { color: 'rgba(255,255,255,0.6)', fontSize: 13 },
+  // Popup Modal
+  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
+  modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden', paddingBottom: 32 },
+  bannerImage: { width: '100%', height: 200, resizeMode: 'cover' },
+  bannerPlaceholder: { width: '100%', height: 180, backgroundColor: '#fce7f3', alignItems: 'center', justifyContent: 'center' },
+  bannerBadge: { position: 'absolute', top: 16, backgroundColor: COLORS.primary, paddingHorizontal: 20, paddingVertical: 6, borderTopRightRadius: 20, borderBottomRightRadius: 20 },
+  bannerBadgeText: { color: '#fff', fontWeight: '900', fontSize: 11 },
+  modalBody: { paddingHorizontal: 24, paddingTop: 18 },
+  bannerTitle: { fontWeight: '800', fontSize: 20, marginBottom: 8 },
+  bannerSubtitle: { fontSize: 13, marginBottom: 20 },
+  primaryBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginBottom: 10, shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  primaryBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  skipBtn: { alignItems: 'center', paddingVertical: 8 },
+  skipBtnText: { color: COLORS.gray400, fontSize: 13 },
 });

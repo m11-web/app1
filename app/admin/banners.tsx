@@ -26,6 +26,8 @@ export default function BannerManagerScreen() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [form, setForm] = useState({ id: '', title: '', subtitle: '', image_url: '', is_active: true });
 
   const load = () => getAllBanners().then(setBanners).catch(() => {}).finally(() => setLoading(false));
@@ -57,22 +59,17 @@ export default function BannerManagerScreen() {
     }
   };
 
-  const handleDelete = (id: string) => {
-    Alert.alert('Delete Banner', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteBanner(id);
-            await load();
-          } catch (e: any) {
-            Alert.alert('Error', e.message ?? 'Could not delete banner');
-          }
-        },
-      },
-    ]);
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteBanner(id);
+      setConfirmId(null);
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Could not delete banner');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleEdit = (b: AppBanner) => {
@@ -122,12 +119,36 @@ export default function BannerManagerScreen() {
                   </View>
                 </View>
                 <View style={styles.actionBtns}>
-                  <TouchableOpacity style={[styles.iconBtn, { backgroundColor: '#eff6ff' }]} onPress={() => handleEdit(b)} activeOpacity={0.7}>
-                    <Text style={{ fontSize: 14 }}>✏️</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.iconBtn, { backgroundColor: '#fef2f2' }]} onPress={() => handleDelete(b.id)} activeOpacity={0.7}>
-                    <Text style={{ fontSize: 14 }}>🗑️</Text>
-                  </TouchableOpacity>
+                  {confirmId === b.id ? (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.iconBtn, { backgroundColor: '#fef2f2', width: 'auto' as any, paddingHorizontal: 10 }]}
+                        onPress={() => handleDelete(b.id)}
+                        activeOpacity={0.7}
+                        disabled={deletingId === b.id}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#dc2626' }}>
+                          {deletingId === b.id ? '...' : 'Yes'}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.iconBtn, { backgroundColor: tc.inputBg, width: 'auto' as any, paddingHorizontal: 10 }]}
+                        onPress={() => setConfirmId(null)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: tc.textSec }}>No</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <TouchableOpacity style={[styles.iconBtn, { backgroundColor: '#eff6ff' }]} onPress={() => handleEdit(b)} activeOpacity={0.7}>
+                        <Text style={{ fontSize: 14 }}>✏️</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.iconBtn, { backgroundColor: '#fef2f2' }]} onPress={() => setConfirmId(b.id)} activeOpacity={0.7}>
+                        <Text style={{ fontSize: 14 }}>🗑️</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               </View>
             </View>
