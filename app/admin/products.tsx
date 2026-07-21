@@ -15,6 +15,7 @@ import { Product } from '../../src/lib/types';
 import { useTheme } from '../../src/context/ThemeContext';
 import BackHeader from '../../src/components/BackHeader';
 import Spinner from '../../src/components/Spinner';
+import ImageUploader from '../../src/components/ImageUploader';
 import { COLORS, getThemeColors } from '../../src/constants/colors';
 
 const EMPTY_FORM = {
@@ -227,10 +228,12 @@ export default function ProductManagerScreen() {
                 <Text style={[styles.label, { color: tc.textSec }]}>Description</Text>
                 <TextInput style={[inputStyle, { height: 60, textAlignVertical: 'top' }]} placeholder="Product description..." placeholderTextColor={COLORS.gray400} value={form.description} onChangeText={t => setForm(f => ({ ...f, description: t }))} multiline numberOfLines={2} />
               </View>
-              <View>
-                <Text style={[styles.label, { color: tc.textSec }]}>Image URL</Text>
-                <TextInput style={inputStyle} placeholder="https://..." placeholderTextColor={COLORS.gray400} value={form.image_url} onChangeText={t => setForm(f => ({ ...f, image_url: t }))} autoCapitalize="none" />
-              </View>
+              <ImageUploader
+                label="Product Image"
+                value={form.image_url}
+                onChange={url => setForm(f => ({ ...f, image_url: url }))}
+                height={150}
+              />
               <View style={styles.twoCol}>
                 <NumField label="Retail Price (Rs.) *" value={form.retail_price} onChange={v => setForm(f => ({ ...f, retail_price: v }))} />
                 <NumField label="Wholesale Price (Rs.)" value={form.wholesale_price} onChange={v => setForm(f => ({ ...f, wholesale_price: v }))} />

@@ -37,3 +37,9 @@ externalPort = 80
 [[ports]]
 localPort = 5001
 externalPort = 3001
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME = "feyqjqhr"
+EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET = "ml_default"

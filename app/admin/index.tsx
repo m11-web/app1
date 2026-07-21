@@ -58,6 +58,7 @@ export default function AdminDashboard() {
     { emoji: '🏷️', label: 'Manage Banners', path: '/admin/banners' },
     { emoji: '🔔', label: 'Send Notification', path: '/admin/notifications' },
     { emoji: '⚙️', label: 'Settings & Employees', path: '/admin/settings' },
+    { emoji: '💾', label: 'Backup & Export Data', path: '/admin/backup' },
   ];
 
   return (

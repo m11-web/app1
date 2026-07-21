@@ -16,6 +16,7 @@ import { AppBanner } from '../../src/lib/types';
 import { useTheme } from '../../src/context/ThemeContext';
 import BackHeader from '../../src/components/BackHeader';
 import Spinner from '../../src/components/Spinner';
+import ImageUploader from '../../src/components/ImageUploader';
 import { COLORS, getThemeColors } from '../../src/constants/colors';
 
 export default function BannerManagerScreen() {
@@ -143,10 +144,12 @@ export default function BannerManagerScreen() {
                 <Text style={[styles.label, { color: tc.textSec }]}>Subtitle</Text>
                 <TextInput style={inputStyle} placeholder="Short description" placeholderTextColor={COLORS.gray400} value={form.subtitle} onChangeText={t => setForm(f => ({ ...f, subtitle: t }))} />
               </View>
-              <View>
-                <Text style={[styles.label, { color: tc.textSec }]}>Image URL</Text>
-                <TextInput style={inputStyle} placeholder="https://..." placeholderTextColor={COLORS.gray400} value={form.image_url} onChangeText={t => setForm(f => ({ ...f, image_url: t }))} autoCapitalize="none" />
-              </View>
+              <ImageUploader
+                label="Banner Image"
+                value={form.image_url}
+                onChange={url => setForm(f => ({ ...f, image_url: url }))}
+                height={140}
+              />
               <View style={styles.toggleRow}>
                 <Text style={[styles.toggleLabel, { color: tc.text }]}>Active</Text>
                 <Switch
