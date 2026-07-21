@@ -1,1 +1,2 @@
 - [Rena Henna stack rewrite](rena-henna-rewrite.md) — Expo/React Native → Vite+React+Tailwind; Supabase lib files kept as-is; phone-width layout pattern used throughout.
+- [Supabase storage adapter on web](supabase-web-storage.md) — AsyncStorage blocks all queries on Expo web; use platform-conditional storage.
