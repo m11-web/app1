@@ -30,12 +30,14 @@ export default function CartScreen() {
   if (items.length === 0) {
     return (
       <View style={[styles.emptyRoot, { backgroundColor: tc.card }]}>
-        <Text style={{ fontSize: 72, marginBottom: 16 }}>🛒</Text>
-        <Text style={[styles.emptyTitle, { color: tc.text }]}>Your cart is empty</Text>
-        <Text style={[styles.emptySub, { color: tc.textSec }]}>Add products to get started</Text>
-        <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/shop')} activeOpacity={0.85}>
-          <Text style={styles.browseBtnText}>Browse Products</Text>
-        </TouchableOpacity>
+        <View style={styles.emptyContent}>
+          <Text style={{ fontSize: 72, marginBottom: 16 }}>🛒</Text>
+          <Text style={[styles.emptyTitle, { color: tc.text }]}>Your cart is empty</Text>
+          <Text style={[styles.emptySub, { color: tc.textSec }]}>Add products to get started</Text>
+          <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/shop')} activeOpacity={0.85}>
+            <Text style={styles.browseBtnText}>Browse Products</Text>
+          </TouchableOpacity>
+        </View>
         <BottomNav />
       </View>
     );
@@ -147,7 +149,8 @@ export default function CartScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  emptyRoot: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, paddingBottom: 100 },
+  emptyRoot: { flex: 1 },
+  emptyContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyTitle: { fontSize: 20, fontWeight: '800', marginBottom: 6 },
   emptySub: { fontSize: 14, textAlign: 'center', marginBottom: 24 },
   browseBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 16 },
