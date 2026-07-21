@@ -15,6 +15,13 @@ This project was completely rewritten from Expo SDK 51 / React Native to a plain
 - Bottom nav (`BottomNav.tsx`) is `fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px]` — always matches the container width.
 - Pages with bottom nav add `pb-24` to their scroll container.
 
+## Theme
+- Default theme is **dark** (set in ThemeContext initial state).
+- Primary color changed from pink `#E75480` to warm orange `#C8591A` (matches logo).
+- Dark bg: `#0F0804`, dark card: `#1C0E07`, secondary text: `#A08060`.
+- Splash screen: `src/components/AppSplash.tsx` — shown in `_layout.tsx` overlay until `onDone` called. Uses `useNativeDriver: false` (Expo web doesn't support native driver).
+- BottomNav badge uses `overflow: 'visible'` on iconWrap + fixed 32×32 size so badge never overlaps siblings.
+
 ## Auth credentials (hardcoded — from auth.ts)
 Admin and employee accounts use local credential checks, NOT Supabase auth. Only `customer` role uses Supabase sign-up/sign-in. Credentials are in `src/lib/auth.ts` — do not move them to env vars without user approval.
 

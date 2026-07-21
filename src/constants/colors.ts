@@ -1,20 +1,22 @@
 export const COLORS = {
-  primary: '#E75480',
-  primaryDark: '#C93060',
-  // Light mode
-  bgLight: '#F9FAFB',
-  cardLight: '#FFFFFF',
-  textLight: '#111827',
-  textSecLight: '#6B7280',
-  borderLight: '#F3F4F6',
-  inputBgLight: '#F9FAFB',
-  // Dark mode
-  bgDark: '#030712',
-  cardDark: '#111827',
+  // Brand — warm orange (from logo)
+  primary: '#C8591A',
+  primaryDark: '#A04412',
+  primaryLight: '#E07030',
+  // Dark brown theme (default)
+  bgDark: '#0F0804',
+  cardDark: '#1C0E07',
   textDark: '#FFFFFF',
-  textSecDark: '#9CA3AF',
-  borderDark: '#1F2937',
-  inputBgDark: '#1F2937',
+  textSecDark: '#A08060',
+  borderDark: '#2E1808',
+  inputBgDark: '#251008',
+  // Light warm theme
+  bgLight: '#FFF8F2',
+  cardLight: '#FFFFFF',
+  textLight: '#1A0C06',
+  textSecLight: '#7A5038',
+  borderLight: '#F0E0D0',
+  inputBgLight: '#FFF4EC',
   // Status colours
   green500: '#22C55E',
   red500: '#EF4444',

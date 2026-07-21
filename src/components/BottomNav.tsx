@@ -42,6 +42,7 @@ export default function BottomNav() {
             style={styles.tab}
             activeOpacity={0.7}
           >
+            {/* Icon container with fixed height so badge never overlaps siblings */}
             <View style={styles.iconWrap}>
               <Text style={styles.emoji}>{tab.emoji}</Text>
               {!!badge && (
@@ -50,10 +51,10 @@ export default function BottomNav() {
                 </View>
               )}
             </View>
-            <Text style={[styles.label, { color: active ? COLORS.primary : COLORS.gray400 }]}>
+            <Text style={[styles.label, { color: active ? COLORS.primary : (isDark ? COLORS.textSecDark : COLORS.gray400) }]}>
               {tab.label}
             </Text>
-            {active && <View style={styles.activeLine} />}
+            {active && <View style={[styles.activeLine, { backgroundColor: COLORS.primary }]} />}
           </TouchableOpacity>
         );
       })}
@@ -66,16 +67,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderTopWidth: 1,
     paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+    // Ensure the nav always sits on top and nothing clips it
+    overflow: 'visible',
   },
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingTop: 10,
+    paddingTop: 12,
     paddingBottom: 4,
     position: 'relative',
   },
+  // Fixed-size box so the badge floats inside without affecting layout
   iconWrap: {
-    position: 'relative',
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // overflow visible so badge shows above
+    overflow: 'visible',
   },
   emoji: {
     fontSize: 20,
@@ -88,15 +97,17 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: -4,
-    right: -8,
+    top: -5,
+    right: -10,
     backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: COLORS.cardDark,
   },
   badgeText: {
     color: '#fff',
@@ -107,8 +118,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: 24,
-    height: 2,
-    backgroundColor: COLORS.primary,
+    height: 3,
     borderRadius: 2,
   },
 });
