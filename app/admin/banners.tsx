@@ -60,7 +60,18 @@ export default function BannerManagerScreen() {
   const handleDelete = (id: string) => {
     Alert.alert('Delete Banner', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteBanner(id); await load(); } },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteBanner(id);
+            await load();
+          } catch (e: any) {
+            Alert.alert('Error', e.message ?? 'Could not delete banner');
+          }
+        },
+      },
     ]);
   };
 
