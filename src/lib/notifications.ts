@@ -1,23 +1,56 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
 import { savePushToken } from './store';
 
-// Show notification banner even when the app is open
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+// expo-notifications remote push was removed from Expo Go in SDK 53+.
+// The package calls console.error during init in Expo Go — we suppress that
+// specific message so the dev overlay doesn't appear.
+
+let _Notifications: typeof import('expo-notifications') | null = null;
+
+(async () => {
+  if (Platform.OS === 'web') return;
+  try {
+    // Temporarily swallow console.error so Expo Go's dev overlay stays clean
+    const orig = console.error;
+    console.error = (...args: any[]) => {
+      const msg = args[0] ?? '';
+      if (typeof msg === 'string' && msg.includes('expo-notifications')) return;
+      orig(...args);
+    };
+    const mod = await import('expo-notifications');
+    console.error = orig; // restore immediately after import
+    _Notifications = mod;
+    try {
+      mod.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+    } catch {
+      // Expo Go – silently skip
+      _Notifications = null;
+    }
+  } catch {
+    // module not available – skip silently
+  }
+})();
 
 export async function registerForPushNotifications(userId: string): Promise<void> {
-  // Expo push tokens only work on native (Android / iOS)
   if (Platform.OS === 'web') return;
 
+  // Allow up to 1 s for the lazy load to complete
+  for (let i = 0; i < 10; i++) {
+    if (_Notifications !== null) break;
+    await new Promise(r => setTimeout(r, 100));
+  }
+  const Notifications = _Notifications;
+  if (!Notifications) return; // Expo Go – silently skip
+
   try {
-    // 1. Check / request permission
+    const Constants = (await import('expo-constants')).default;
+
     const { status: existing } = await Notifications.getPermissionsAsync();
     let finalStatus = existing;
     if (existing !== 'granted') {
@@ -26,7 +59,6 @@ export async function registerForPushNotifications(userId: string): Promise<void
     }
     if (finalStatus !== 'granted') return;
 
-    // 2. Get Expo push token
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId ??
       (Constants as any).easConfig?.projectId;
@@ -37,7 +69,6 @@ export async function registerForPushNotifications(userId: string): Promise<void
 
     if (token) await savePushToken(userId, token);
 
-    // 3. Android requires a notification channel
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Rena Henna',
@@ -47,7 +78,6 @@ export async function registerForPushNotifications(userId: string): Promise<void
       });
     }
   } catch (e) {
-    // Silently fail — notification is optional
     console.warn('Push registration:', e);
   }
 }

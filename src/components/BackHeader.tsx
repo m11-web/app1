@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   rightSlot: {
-    width: 36,
+    minWidth: 36,
     alignItems: 'flex-end',
   },
 });
