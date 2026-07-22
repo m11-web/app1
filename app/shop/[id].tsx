@@ -81,13 +81,35 @@ export default function ProductDetailScreen() {
   return (
     <View style={[styles.root, { backgroundColor: tc.card }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
-        {/* Image */}
+        {/* Image / Video — swaps based on selected thumbnail */}
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: selectedImg || product.image_url || PLACEHOLDER }}
-            style={styles.mainImage}
-            defaultSource={{ uri: PLACEHOLDER }}
-          />
+          {selectedImg === '__video__' && product.video_url ? (
+            <View style={styles.mainVideoWrap}>
+              {Platform.OS === 'web' ? (
+                // @ts-ignore
+                <video
+                  src={product.video_url}
+                  controls
+                  autoPlay
+                  style={{ width: '100%', height: '100%', backgroundColor: '#000', display: 'block' }}
+                />
+              ) : (
+                <TouchableOpacity
+                  style={styles.videoLinkBtn}
+                  onPress={() => Linking.openURL(product.video_url!)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.videoLinkText}>▶  Watch Product Video</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <Image
+              source={{ uri: selectedImg || product.image_url || PLACEHOLDER }}
+              style={styles.mainImage}
+              defaultSource={{ uri: PLACEHOLDER }}
+            />
+          )}
           {/* Back btn */}
           <TouchableOpacity
             style={[styles.backBtn, { backgroundColor: isDark ? 'rgba(31,41,55,0.9)' : 'rgba(255,255,255,0.9)' }]}
@@ -133,27 +155,6 @@ export default function ProductDetailScreen() {
           </ScrollView>
         )}
 
-        {/* Video player — shown when video thumb is selected OR always if no extra images */}
-        {!!product.video_url && (selectedImg === '__video__' || allImages.length <= 1) && (
-          <View style={styles.videoContainer}>
-            {Platform.OS === 'web' ? (
-              // @ts-ignore — HTML5 video works on Expo Web via react-native-web
-              <video
-                src={product.video_url}
-                controls
-                style={{ width: '100%', maxHeight: 300, backgroundColor: '#000', display: 'block' }}
-              />
-            ) : (
-              <TouchableOpacity
-                style={styles.videoLinkBtn}
-                onPress={() => Linking.openURL(product.video_url!)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.videoLinkText}>▶  Watch Product Video</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
 
         {/* Info */}
         <View style={styles.infoSection}>
@@ -287,9 +288,9 @@ const styles = StyleSheet.create({
   thumbImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   videoThumb: { backgroundColor: '#1f2937', alignItems: 'center', justifyContent: 'center' },
   videoThumbIcon: { color: '#fff', fontSize: 20 },
-  videoContainer: { width: '100%', backgroundColor: '#000' },
-  videoLinkBtn: { margin: 16, backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  videoLinkText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  mainVideoWrap: { width: '100%', aspectRatio: 1, backgroundColor: '#000' },
+  videoLinkBtn: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  videoLinkText: { color: '#fff', fontWeight: '800', fontSize: 15 },
   infoSection: { paddingHorizontal: 20, paddingTop: 16, gap: 8 },
   fridayBanner: { backgroundColor: '#fefce8', borderWidth: 1, borderColor: '#fde68a', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
   category: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8 },
