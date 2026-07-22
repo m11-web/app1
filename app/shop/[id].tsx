@@ -115,7 +115,7 @@ export default function ProductDetailScreen() {
               style={styles.videoPlayer}
               useNativeControls
               resizeMode={ResizeMode.CONTAIN}
-              shouldPlay
+              shouldPlay={activeIndex === imgSlides.length}
             />
           )}
         </View>
