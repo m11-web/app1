@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Profile } from '../lib/types';
 import { supabase } from '../lib/supabase';
 import { getCurrentProfile, clearLocalSession } from '../lib/auth';
+import { registerForPushNotifications } from '../lib/notifications';
 
 interface AuthContextType {
   profile: Profile | null;
@@ -23,7 +24,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     getCurrentProfile()
-      .then(setProfile)
+      .then(p => {
+        setProfile(p);
+        if (p) registerForPushNotifications(p.id);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
 
@@ -42,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (existing) {
           setProfile(existing);
+          registerForPushNotifications(existing.id);
         } else {
           const newProfile: Profile = {
             id: session.user.id,
