@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Theme = 'light' | 'dark';
@@ -9,15 +10,18 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
+  theme: 'light',
   toggleTheme: () => {},
-  isDark: true,
+  isDark: false,
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const systemScheme = useColorScheme(); // 'dark' | 'light' | null
+  const [theme, setTheme] = useState<Theme>(systemScheme === 'dark' ? 'dark' : 'light');
 
   useEffect(() => {
+    // If user has manually saved a preference, honour it.
+    // Otherwise stay with the system default.
     AsyncStorage.getItem('rh_theme').then(saved => {
       if (saved === 'dark' || saved === 'light') setTheme(saved);
     });
