@@ -28,6 +28,9 @@ const EMPTY_FORM = {
   stock_quantity: 0,
   discount_percent: 0,
   image_url: '',
+  image2: '',
+  image3: '',
+  video_url: '',
   is_active: true,
 };
 
@@ -63,6 +66,7 @@ export default function ProductManagerScreen() {
 
   const openEdit = (p: Product) => {
     setEditProduct(p);
+    const extraImgs = (p.images || []).filter(img => img !== p.image_url);
     setForm({
       name: p.name,
       description: p.description || '',
@@ -73,6 +77,9 @@ export default function ProductManagerScreen() {
       stock_quantity: p.stock_quantity,
       discount_percent: p.discount_percent ?? 0,
       image_url: p.image_url || '',
+      image2: extraImgs[0] || '',
+      image3: extraImgs[1] || '',
+      video_url: p.video_url || '',
       is_active: p.is_active,
     });
     setError('');
@@ -83,13 +90,29 @@ export default function ProductManagerScreen() {
     if (!form.name.trim()) { setError('Product name required.'); return; }
     if (form.retail_price <= 0) { setError('Retail price must be greater than 0.'); return; }
     setSaving(true); setError('');
+    // Build images array (extra images beyond the main image_url)
+    const extraImages = [form.image2, form.image3].filter(Boolean);
+    const payload = {
+      name: form.name,
+      description: form.description,
+      category: form.category,
+      retail_price: form.retail_price,
+      wholesale_price: form.wholesale_price,
+      manufacturing_price: form.manufacturing_price,
+      stock_quantity: form.stock_quantity,
+      discount_percent: form.discount_percent,
+      image_url: form.image_url,
+      images: extraImages.length > 0 ? extraImages : null,
+      video_url: form.video_url.trim() || null,
+      is_active: form.is_active,
+    };
     try {
       if (editProduct) {
-        const { error } = await supabase.from('products').update(form).eq('id', editProduct.id);
+        const { error } = await supabase.from('products').update(payload).eq('id', editProduct.id);
         if (error) throw error;
         setSuccess('Product updated!');
       } else {
-        const { error } = await supabase.from('products').insert(form);
+        const { error } = await supabase.from('products').insert(payload);
         if (error) throw error;
         setSuccess('Product added!');
       }
@@ -229,11 +252,41 @@ export default function ProductManagerScreen() {
                 <TextInput style={[inputStyle, { height: 60, textAlignVertical: 'top' }]} placeholder="Product description..." placeholderTextColor={COLORS.gray400} value={form.description} onChangeText={t => setForm(f => ({ ...f, description: t }))} multiline numberOfLines={2} />
               </View>
               <ImageUploader
-                label="Product Image"
+                label="Main Image *"
                 value={form.image_url}
                 onChange={url => setForm(f => ({ ...f, image_url: url }))}
                 height={150}
               />
+              <View style={styles.twoCol}>
+                <View style={{ flex: 1 }}>
+                  <ImageUploader
+                    label="Image 2"
+                    value={form.image2}
+                    onChange={url => setForm(f => ({ ...f, image2: url }))}
+                    height={100}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <ImageUploader
+                    label="Image 3"
+                    value={form.image3}
+                    onChange={url => setForm(f => ({ ...f, image3: url }))}
+                    height={100}
+                  />
+                </View>
+              </View>
+              <View>
+                <Text style={[styles.label, { color: tc.textSec }]}>Video URL (optional)</Text>
+                <TextInput
+                  style={inputStyle}
+                  placeholder="https://..."
+                  placeholderTextColor={COLORS.gray400}
+                  value={form.video_url}
+                  onChangeText={t => setForm(f => ({ ...f, video_url: t }))}
+                  autoCapitalize="none"
+                  keyboardType="url"
+                />
+              </View>
               <View style={styles.twoCol}>
                 <NumField label="Retail Price (Rs.) *" value={form.retail_price} onChange={v => setForm(f => ({ ...f, retail_price: v }))} />
                 <NumField label="Wholesale Price (Rs.)" value={form.wholesale_price} onChange={v => setForm(f => ({ ...f, wholesale_price: v }))} />

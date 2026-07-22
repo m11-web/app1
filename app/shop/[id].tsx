@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Platform,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getProductById } from '../../src/lib/store';
@@ -61,7 +62,8 @@ export default function ProductDetailScreen() {
   const hasDiscount = product.discount_percent > 0;
   const friday = isFriday();
   const outOfStock = product.stock_quantity === 0;
-  const allImages = [product.image_url, ...(product.images || [])].filter(Boolean);
+  // Deduplicate: images array may already contain image_url
+  const allImages = [...new Set([product.image_url, ...(product.images || [])].filter(Boolean))];
   const cartItem = items.find(i => i.product.id === product.id);
 
   const handleAdd = () => {
@@ -101,8 +103,8 @@ export default function ProductDetailScreen() {
           )}
         </View>
 
-        {/* Thumbnail strip */}
-        {allImages.length > 1 && (
+        {/* Thumbnail strip — images + video thumb */}
+        {(allImages.length > 1 || !!product.video_url) && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -119,7 +121,38 @@ export default function ProductDetailScreen() {
                 <Image source={{ uri: img }} style={styles.thumbImg} />
               </TouchableOpacity>
             ))}
+            {!!product.video_url && (
+              <TouchableOpacity
+                style={[styles.thumb, styles.videoThumb, { borderColor: selectedImg === '__video__' ? COLORS.primary : 'transparent' }]}
+                onPress={() => setSelectedImg('__video__')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.videoThumbIcon}>▶</Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
+        )}
+
+        {/* Video player — shown when video thumb is selected OR always if no extra images */}
+        {!!product.video_url && (selectedImg === '__video__' || allImages.length <= 1) && (
+          <View style={styles.videoContainer}>
+            {Platform.OS === 'web' ? (
+              // @ts-ignore — HTML5 video works on Expo Web via react-native-web
+              <video
+                src={product.video_url}
+                controls
+                style={{ width: '100%', maxHeight: 300, backgroundColor: '#000', display: 'block' }}
+              />
+            ) : (
+              <TouchableOpacity
+                style={styles.videoLinkBtn}
+                onPress={() => Linking.openURL(product.video_url!)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.videoLinkText}>▶  Watch Product Video</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
 
         {/* Info */}
@@ -252,6 +285,11 @@ const styles = StyleSheet.create({
   thumbContent: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
   thumb: { width: 56, height: 56, borderRadius: 12, overflow: 'hidden', borderWidth: 2 },
   thumbImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+  videoThumb: { backgroundColor: '#1f2937', alignItems: 'center', justifyContent: 'center' },
+  videoThumbIcon: { color: '#fff', fontSize: 20 },
+  videoContainer: { width: '100%', backgroundColor: '#000' },
+  videoLinkBtn: { margin: 16, backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  videoLinkText: { color: '#fff', fontWeight: '800', fontSize: 14 },
   infoSection: { paddingHorizontal: 20, paddingTop: 16, gap: 8 },
   fridayBanner: { backgroundColor: '#fefce8', borderWidth: 1, borderColor: '#fde68a', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
   category: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8 },

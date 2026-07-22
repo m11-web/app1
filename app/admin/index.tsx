@@ -40,7 +40,10 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
+  // Only count confirmed/shipped/delivered — not pending or cancelled
+  const totalRevenue = orders
+    .filter(o => o.status !== 'pending' && o.status !== 'cancelled')
+    .reduce((s, o) => s + o.total, 0);
   const pending = orders.filter(o => o.status === 'pending').length;
   const lowStock = products.filter(p => p.stock_quantity <= 5).length;
 
