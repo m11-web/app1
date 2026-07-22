@@ -8,6 +8,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useTheme } from '../context/ThemeContext';
 
@@ -34,7 +35,7 @@ export default function BackHeader({ title, right, dark }: Props) {
         style={[styles.backBtn, { backgroundColor: btnBg }]}
         activeOpacity={0.7}
       >
-        <Text style={[styles.backArrow, { color: textColor }]}>←</Text>
+        <Ionicons name="arrow-back" size={20} color={textColor} />
       </TouchableOpacity>
       <Text style={[styles.title, { color: textColor }]}>{title}</Text>
       <View style={styles.rightSlot}>{right ?? null}</View>
@@ -58,10 +59,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  backArrow: {
-    fontSize: 18,
-    fontWeight: '700',
   },
   title: {
     fontSize: 17,

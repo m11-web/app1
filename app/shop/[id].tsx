@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
+import { Ionicons } from '@expo/vector-icons';
 import { getProductById } from '../../src/lib/store';
 import { Product, getCurrentPrice, isFriday } from '../../src/lib/types';
 import { useCart } from '../../src/context/CartContext';
@@ -163,7 +164,7 @@ export default function ProductDetailScreen() {
             onPress={() => router.canGoBack() ? router.back() : router.replace('/shop')}
             activeOpacity={0.8}
           >
-            <Text style={[{ fontSize: 18, fontWeight: '700' }, { color: tc.text }]}>←</Text>
+            <Ionicons name="arrow-back" size={20} color={tc.text} />
           </TouchableOpacity>
 
           {hasDiscount && (
