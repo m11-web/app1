@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   Image,
   TouchableOpacity,
   ScrollView,
+  FlatList,
+  Modal,
   StyleSheet,
   Platform,
   StatusBar,
-  Linking,
+  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Video, ResizeMode } from 'expo-av';
 import { getProductById } from '../../src/lib/store';
-import { Product, getCurrentPrice, getDiscountedPrice, isFriday } from '../../src/lib/types';
+import { Product, getCurrentPrice, isFriday } from '../../src/lib/types';
 import { useCart } from '../../src/context/CartContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import Spinner from '../../src/components/Spinner';
@@ -20,6 +24,7 @@ import { COLORS, getThemeColors } from '../../src/constants/colors';
 
 const PLACEHOLDER = 'https://placehold.co/400x400/E75480/white?text=🌿';
 const STATUS_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 44;
+const SCREEN_W = Dimensions.get('window').width;
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,17 +32,20 @@ export default function ProductDetailScreen() {
   const { addItem, items } = useCart();
   const { isDark } = useTheme();
   const tc = getThemeColors(isDark);
+  const { width } = useWindowDimensions();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedImg, setSelectedImg] = useState('');
+  const [activeIndex, setActiveIndex] = useState(0);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [fullscreenImg, setFullscreenImg] = useState<string | null>(null);
+  const flatRef = useRef<FlatList>(null);
 
   useEffect(() => {
     if (!id) return;
     getProductById(id)
-      .then(p => { setProduct(p); if (p) setSelectedImg(p.image_url); })
+      .then(p => { setProduct(p); })
       .catch(() => setProduct(null))
       .finally(() => setLoading(false));
   }, [id]);
@@ -62,8 +70,14 @@ export default function ProductDetailScreen() {
   const hasDiscount = product.discount_percent > 0;
   const friday = isFriday();
   const outOfStock = product.stock_quantity === 0;
-  // Deduplicate: images array may already contain image_url
-  const allImages = [...new Set([product.image_url, ...(product.images || [])].filter(Boolean))];
+
+  // Build slides: images first, then video slot last
+  const imgSlides = [...new Set([product.image_url, ...(product.images || [])].filter(Boolean))];
+  const hasVideo = !!product.video_url;
+  // total slides = images + (video ? 1 : 0)
+  const totalSlides = imgSlides.length + (hasVideo ? 1 : 0);
+  const isVideoSlide = (i: number) => hasVideo && i === imgSlides.length;
+
   const cartItem = items.find(i => i.product.id === product.id);
 
   const handleAdd = () => {
@@ -78,75 +92,136 @@ export default function ProductDetailScreen() {
     ? { bg: '#fff7ed', text: '#f97316', label: `Only ${product.stock_quantity} left!` }
     : { bg: '#f0fdf4', text: '#16a34a', label: 'In Stock' };
 
+  const slideData = [
+    ...imgSlides.map((uri, i) => ({ type: 'image' as const, uri, index: i })),
+    ...(hasVideo ? [{ type: 'video' as const, uri: product.video_url!, index: imgSlides.length }] : []),
+  ];
+
+  const renderSlide = ({ item }: { item: typeof slideData[0] }) => {
+    if (item.type === 'video') {
+      return (
+        <View style={[styles.slide, { width }]}>
+          {Platform.OS === 'web' ? (
+            // @ts-ignore
+            <video
+              src={item.uri}
+              controls
+              autoPlay
+              style={{ width: '100%', height: '100%', backgroundColor: '#000', display: 'block' }}
+            />
+          ) : (
+            <Video
+              source={{ uri: item.uri }}
+              style={styles.videoPlayer}
+              useNativeControls
+              resizeMode={ResizeMode.CONTAIN}
+              shouldPlay
+            />
+          )}
+        </View>
+      );
+    }
+    return (
+      <TouchableOpacity
+        style={[styles.slide, { width }]}
+        activeOpacity={0.95}
+        onPress={() => setFullscreenImg(item.uri)}
+      >
+        <Image
+          source={{ uri: item.uri || PLACEHOLDER }}
+          style={styles.mainImage}
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: tc.card }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
-        {/* Image / Video — swaps based on selected thumbnail */}
-        <View style={styles.imageContainer}>
-          {selectedImg === '__video__' && product.video_url ? (
-            <View style={styles.mainVideoWrap}>
-              {Platform.OS === 'web' ? (
-                // @ts-ignore
-                <video
-                  src={product.video_url}
-                  controls
-                  autoPlay
-                  style={{ width: '100%', height: '100%', backgroundColor: '#000', display: 'block' }}
-                />
-              ) : (
-                <TouchableOpacity
-                  style={styles.videoLinkBtn}
-                  onPress={() => Linking.openURL(product.video_url!)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.videoLinkText}>▶  Watch Product Video</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ) : (
-            <Image
-              source={{ uri: selectedImg || product.image_url || PLACEHOLDER }}
-              style={styles.mainImage}
-              defaultSource={{ uri: PLACEHOLDER }}
-            />
-          )}
-          {/* Back btn */}
+
+        {/* ── Swipeable Image / Video Gallery ── */}
+        <View style={[styles.galleryContainer, { width }]}>
+          <FlatList
+            ref={flatRef}
+            data={slideData}
+            renderItem={renderSlide}
+            keyExtractor={item => String(item.index)}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={e => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+              setActiveIndex(idx);
+            }}
+            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+          />
+
+          {/* Back button */}
           <TouchableOpacity
             style={[styles.backBtn, { backgroundColor: isDark ? 'rgba(31,41,55,0.9)' : 'rgba(255,255,255,0.9)' }]}
-            onPress={() => router.back()}
+            onPress={() => router.canGoBack() ? router.back() : router.replace('/shop')}
             activeOpacity={0.8}
           >
             <Text style={[{ fontSize: 18, fontWeight: '700' }, { color: tc.text }]}>←</Text>
           </TouchableOpacity>
+
           {hasDiscount && (
             <View style={styles.discountBadge}>
               <Text style={styles.discountText}>{friday ? '🌟 FRIDAY' : `-${product.discount_percent}%`}</Text>
             </View>
           )}
+
+          {/* Dot indicators */}
+          {totalSlides > 1 && (
+            <View style={styles.dotsRow}>
+              {slideData.map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.dot,
+                    { backgroundColor: i === activeIndex ? '#fff' : 'rgba(255,255,255,0.5)' },
+                    i === activeIndex && styles.dotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
         </View>
 
-        {/* Thumbnail strip — images + video thumb */}
-        {(allImages.length > 1 || !!product.video_url) && (
+        {/* ── Thumbnail strip ── */}
+        {totalSlides > 1 && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={[styles.thumbStrip, { backgroundColor: tc.card }]}
             contentContainerStyle={styles.thumbContent}
           >
-            {allImages.map((img, i) => (
+            {imgSlides.map((img, i) => (
               <TouchableOpacity
                 key={i}
-                onPress={() => setSelectedImg(img)}
-                style={[styles.thumb, { borderColor: selectedImg === img ? COLORS.primary : 'transparent' }]}
+                onPress={() => {
+                  setActiveIndex(i);
+                  flatRef.current?.scrollToIndex({ index: i, animated: true });
+                }}
+                style={[styles.thumb, { borderColor: activeIndex === i ? COLORS.primary : 'transparent' }]}
                 activeOpacity={0.8}
               >
                 <Image source={{ uri: img }} style={styles.thumbImg} />
               </TouchableOpacity>
             ))}
-            {!!product.video_url && (
+            {hasVideo && (
               <TouchableOpacity
-                style={[styles.thumb, styles.videoThumb, { borderColor: selectedImg === '__video__' ? COLORS.primary : 'transparent' }]}
-                onPress={() => setSelectedImg('__video__')}
+                style={[
+                  styles.thumb,
+                  styles.videoThumb,
+                  { borderColor: activeIndex === imgSlides.length ? COLORS.primary : 'transparent' },
+                ]}
+                onPress={() => {
+                  const idx = imgSlides.length;
+                  setActiveIndex(idx);
+                  flatRef.current?.scrollToIndex({ index: idx, animated: true });
+                }}
                 activeOpacity={0.8}
               >
                 <Text style={styles.videoThumbIcon}>▶</Text>
@@ -155,8 +230,7 @@ export default function ProductDetailScreen() {
           </ScrollView>
         )}
 
-
-        {/* Info */}
+        {/* ── Info ── */}
         <View style={styles.infoSection}>
           {friday && (
             <View style={styles.fridayBanner}>
@@ -222,7 +296,7 @@ export default function ProductDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Bottom action */}
+      {/* ── Bottom action bar ── */}
       <View style={[styles.bottomBar, { backgroundColor: tc.card, borderTopColor: tc.border }]}>
         <TouchableOpacity
           style={[styles.viewCartBtn, { borderColor: COLORS.primary }]}
@@ -248,6 +322,22 @@ export default function ProductDetailScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* ── Fullscreen image modal ── */}
+      <Modal visible={!!fullscreenImg} transparent animationType="fade" onRequestClose={() => setFullscreenImg(null)}>
+        <View style={styles.fsOverlay}>
+          <TouchableOpacity style={styles.fsClose} onPress={() => setFullscreenImg(null)} activeOpacity={0.8}>
+            <Text style={styles.fsCloseText}>✕</Text>
+          </TouchableOpacity>
+          {fullscreenImg && (
+            <Image
+              source={{ uri: fullscreenImg }}
+              style={styles.fsImage}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -256,8 +346,12 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   notFoundText: { fontSize: 16, fontWeight: '700' },
-  imageContainer: { position: 'relative' },
-  mainImage: { width: '100%', aspectRatio: 1, resizeMode: 'contain', backgroundColor: 'transparent' },
+
+  // Gallery
+  galleryContainer: { position: 'relative', aspectRatio: 1, backgroundColor: '#000' },
+  slide: { aspectRatio: 1, backgroundColor: '#000' },
+  mainImage: { width: '100%', height: '100%' },
+  videoPlayer: { width: '100%', height: '100%' },
   backBtn: {
     position: 'absolute',
     top: STATUS_TOP + 8,
@@ -268,9 +362,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 4,
+    zIndex: 10,
   },
   discountBadge: {
     position: 'absolute',
@@ -280,17 +375,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 20,
+    zIndex: 10,
   },
   discountText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-  thumbStrip: { borderBottomWidth: 0 },
+  dotsRow: {
+    position: 'absolute',
+    bottom: 10,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    zIndex: 10,
+  },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  dotActive: { width: 18 },
+
+  // Thumbnail strip
+  thumbStrip: {},
   thumbContent: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
   thumb: { width: 56, height: 56, borderRadius: 12, overflow: 'hidden', borderWidth: 2 },
   thumbImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   videoThumb: { backgroundColor: '#1f2937', alignItems: 'center', justifyContent: 'center' },
   videoThumbIcon: { color: '#fff', fontSize: 20 },
-  mainVideoWrap: { width: '100%', aspectRatio: 1, backgroundColor: '#000' },
-  videoLinkBtn: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  videoLinkText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+
+  // Info
   infoSection: { paddingHorizontal: 20, paddingTop: 16, gap: 8 },
   fridayBanner: { backgroundColor: '#fefce8', borderWidth: 1, borderColor: '#fde68a', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
   category: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8 },
@@ -311,9 +418,17 @@ const styles = StyleSheet.create({
   qtyBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   qtyBtnText: { fontSize: 20, fontWeight: '700', lineHeight: 24 },
   qtyValue: { fontSize: 18, fontWeight: '800', minWidth: 30, textAlign: 'center' },
+
+  // Bottom bar
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingTop: 12, paddingBottom: Platform.OS === 'ios' ? 28 : 16, borderTopWidth: 1 },
   viewCartBtn: { flex: 1, paddingVertical: 14, borderRadius: 16, borderWidth: 2, alignItems: 'center' },
   viewCartText: { color: COLORS.primary, fontWeight: '800', fontSize: 14 },
   addCartBtn: { flex: 1, backgroundColor: COLORS.primary, paddingVertical: 14, borderRadius: 16, alignItems: 'center', shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 6, elevation: 3 },
   addCartText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+
+  // Fullscreen modal
+  fsOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
+  fsClose: { position: 'absolute', top: STATUS_TOP + 12, right: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  fsCloseText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  fsImage: { width: SCREEN_W, height: SCREEN_W * 1.2 },
 });

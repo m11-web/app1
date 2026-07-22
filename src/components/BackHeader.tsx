@@ -30,7 +30,7 @@ export default function BackHeader({ title, right, dark }: Props) {
   return (
     <View style={[styles.container, { backgroundColor: bgColor, paddingTop: STATUS_BAR_HEIGHT + 8 }]}>
       <TouchableOpacity
-        onPress={() => router.back()}
+        onPress={() => router.canGoBack() ? router.back() : router.replace('/')}  
         style={[styles.backBtn, { backgroundColor: btnBg }]}
         activeOpacity={0.7}
       >
