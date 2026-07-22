@@ -16,6 +16,7 @@
     },
     "android": {
       "package": "com.renahenna.app",
+      "newArchEnabled": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#E75480"
@@ -33,6 +34,12 @@
     "web": {
       "favicon": "./assets/images/favicon.png",
       "bundler": "metro"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1b66e1e3-8428-46e0-a670-a1b486bb1087"
+      }
     }
   }
 }
