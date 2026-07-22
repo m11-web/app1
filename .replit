@@ -45,6 +45,7 @@ EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME = "feyqjqhr"
 EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET = "ml_default"
 
 [deployment]
-deploymentTarget = "static"
+deploymentTarget = "autoscale"
 build = ["npx", "expo", "export", "--platform", "web"]
 publicDir = "dist"
+run = ["npx", "serve", "dist", "--listen", "3000"]
