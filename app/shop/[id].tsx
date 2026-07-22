@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   notFoundText: { fontSize: 16, fontWeight: '700' },
   imageContainer: { position: 'relative' },
-  mainImage: { width: '100%', aspectRatio: 1, resizeMode: 'contain', backgroundColor: '#fff' },
+  mainImage: { width: '100%', aspectRatio: 1, resizeMode: 'cover' },
   backBtn: {
     position: 'absolute',
     top: STATUS_TOP + 8,

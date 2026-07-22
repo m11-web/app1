@@ -96,12 +96,11 @@ const styles = StyleSheet.create({
   },
   imageWrap: {
     position: 'relative',
-    backgroundColor: '#fff',
   },
   image: {
     width: '100%',
     aspectRatio: 1,
-    resizeMode: 'contain',
+    resizeMode: 'cover',
   },
   discountBadge: {
     position: 'absolute',
