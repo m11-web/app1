@@ -102,7 +102,7 @@ export async function signInWithGoogle(): Promise<{ error: string | null }> {
 export async function signIn(email: string, password: string): Promise<AuthResult> {
   const emailLower = email.toLowerCase().trim();
 
-  // 1. Check if admin/employee (local password in DB)
+  // 1. Check if admin/employee exists in profiles table
   const { data: localProfile } = await supabase
     .from('profiles')
     .select('*')
@@ -111,11 +111,26 @@ export async function signIn(email: string, password: string): Promise<AuthResul
     .single();
 
   if (localProfile) {
-    if (localProfile.local_password !== password) {
-      return { profile: null, error: 'Incorrect password.' };
+    // 1a. local_password is set — compare directly (local auth)
+    if (localProfile.local_password) {
+      if (localProfile.local_password !== password) {
+        return { profile: null, error: 'Incorrect password.' };
+      }
+      await saveLocalSession(localProfile);
+      return { profile: localProfile, error: null, isLocalAuth: true };
+    }
+
+    // 1b. local_password NOT set — employee was created via Supabase auth
+    //     Try Supabase auth and use the profile row we already have
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: emailLower, password });
+    if (authError) {
+      return {
+        profile: null,
+        error: 'Incorrect password. If you were just added as an employee, ask your admin to set your password inside the app.',
+      };
     }
     await saveLocalSession(localProfile);
-    return { profile: localProfile, error: null, isLocalAuth: true };
+    return { profile: localProfile, error: null, isLocalAuth: false };
   }
 
   // 2. Regular Supabase auth (customers)

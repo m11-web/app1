@@ -146,22 +146,17 @@ export default function LoginScreen() {
             </View>
           )}
 
-          {/* Sign In button — disabled when no account */}
+          {/* Sign In button — always enabled so employees can still try */}
           <TouchableOpacity
-            style={[
-              styles.primaryBtn,
-              (loading || noAccount) && styles.btnDisabled,
-            ]}
+            style={[styles.primaryBtn, loading && styles.btnDisabled]}
             onPress={handleLogin}
-            disabled={loading || noAccount}
+            disabled={loading}
             activeOpacity={0.85}
           >
             {loading ? (
               <Spinner size={20} color="#fff" />
             ) : (
-              <Text style={styles.primaryBtnText}>
-                {noAccount ? 'Login Disabled' : 'Sign In'}
-              </Text>
+              <Text style={styles.primaryBtnText}>Sign In</Text>
             )}
           </TouchableOpacity>
 
