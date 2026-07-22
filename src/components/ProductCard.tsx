@@ -34,7 +34,7 @@ export default function ProductCard({ product }: { product: Product }) {
       onPress={() => router.push(`/shop/${product.id}` as any)}
       activeOpacity={0.92}
     >
-      <View style={styles.imageWrap}>
+      <View style={[styles.imageWrap, { backgroundColor: isDark ? '#1f2937' : '#f5f5f5' }]}>
         <Image
           source={{ uri: product.image_url || PLACEHOLDER }}
           style={styles.image}
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     aspectRatio: 1,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   discountBadge: {
     position: 'absolute',
