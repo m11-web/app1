@@ -49,9 +49,15 @@ export default function CheckoutScreen() {
     return null;
   }
 
+  const phoneRegex = /^(\+92|0)(3\d{9}|\d{9,10})$/;
+
   const handleOrder = async () => {
     if (!name.trim() || !phone.trim() || !city.trim() || !province || !streetAddress.trim()) {
       setError('Please fill all required fields.'); return;
+    }
+    const cleanPhone = phone.replace(/[-\s]/g, '');
+    if (!phoneRegex.test(cleanPhone)) {
+      setError('Please enter a valid Pakistani phone number (e.g. 03XX-XXXXXXX).'); return;
     }
     setError('');
     setLoading(true);

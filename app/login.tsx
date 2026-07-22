@@ -47,8 +47,11 @@ export default function LoginScreen() {
   const [noAccount, setNoAccount] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleLogin = async () => {
-    if (!email || !password) { setErrorMsg('Please fill all fields.'); return; }
+    if (!email.trim() || !password) { setErrorMsg('Please fill all fields.'); return; }
+    if (!emailRegex.test(email.trim())) { setErrorMsg('Please enter a valid email address.'); return; }
     setErrorMsg(''); setNoAccount(false); setLoading(true);
     const result = await signIn(email.trim(), password);
     setLoading(false);

@@ -33,8 +33,11 @@ export default function SignupScreen() {
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState(false);
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleSignup = async () => {
-    if (!fullName || !email || !password) { setError('Please fill all fields.'); return; }
+    if (!fullName.trim() || !email.trim() || !password) { setError('Please fill all fields.'); return; }
+    if (!emailRegex.test(email.trim())) { setError('Please enter a valid email address.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
     setError(''); setLoading(true);
     const result = await signUp(email.trim(), password, fullName.trim());

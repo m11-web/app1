@@ -76,6 +76,9 @@ export default function CartScreen() {
                     {item.product.name}
                   </Text>
                   <Text style={styles.itemPrice}>Rs. {price}</Text>
+                  {item.quantity >= item.product.stock_quantity && (
+                    <Text style={styles.stockCapText}>Max stock reached</Text>
+                  )}
                   <View style={styles.qtyRow}>
                     <TouchableOpacity
                       style={[styles.qtyBtn, { backgroundColor: isDark ? COLORS.gray700 : COLORS.gray100 }]}
@@ -86,11 +89,12 @@ export default function CartScreen() {
                     </TouchableOpacity>
                     <Text style={[styles.qtyValue, { color: tc.text }]}>{item.quantity}</Text>
                     <TouchableOpacity
-                      style={[styles.qtyBtn, { backgroundColor: isDark ? COLORS.gray700 : COLORS.gray100 }]}
+                      style={[styles.qtyBtn, { backgroundColor: isDark ? COLORS.gray700 : COLORS.gray100 }, item.quantity >= item.product.stock_quantity && styles.qtyBtnDisabled]}
                       onPress={() => updateQty(item.product.id, item.quantity + 1)}
+                      disabled={item.quantity >= item.product.stock_quantity}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.qtyBtnText, { color: tc.text }]}>+</Text>
+                      <Text style={[styles.qtyBtnText, { color: item.quantity >= item.product.stock_quantity ? COLORS.gray400 : tc.text }]}>+</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={{ marginLeft: 'auto' }}
@@ -163,8 +167,10 @@ const styles = StyleSheet.create({
   itemPrice: { color: COLORS.primary, fontWeight: '800', fontSize: 15, marginBottom: 8 },
   qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   qtyBtn: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  qtyBtnDisabled: { opacity: 0.35 },
   qtyBtnText: { fontWeight: '700', fontSize: 16, lineHeight: 20 },
   qtyValue: { fontWeight: '700', fontSize: 14, minWidth: 24, textAlign: 'center' },
+  stockCapText: { color: COLORS.primary, fontSize: 10, fontWeight: '600', marginBottom: 2 },
   lineTotal: { fontWeight: '800', fontSize: 13, alignSelf: 'flex-start' },
   summary: { borderRadius: 20, padding: 20, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   summaryTitle: { fontSize: 16, fontWeight: '800', marginBottom: 14 },

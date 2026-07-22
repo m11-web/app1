@@ -27,15 +27,20 @@ export default function ShopScreen() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [netError, setNetError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCat, setSelectedCat] = useState(queryCategory || '');
 
-  useEffect(() => {
+  const loadProducts = () => {
+    setLoading(true);
+    setNetError(false);
     getProducts()
       .then(setProducts)
-      .catch(() => {})
+      .catch(() => setNetError(true))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { loadProducts(); }, []);
 
   useEffect(() => { setSelectedCat(queryCategory || ''); }, [queryCategory]);
 
@@ -91,6 +96,15 @@ export default function ShopScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
         {loading ? (
           <View style={styles.center}><Spinner /></View>
+        ) : netError ? (
+          <View style={styles.center}>
+            <Text style={{ fontSize: 48, marginBottom: 12 }}>📡</Text>
+            <Text style={[styles.emptyTitle, { color: tc.text }]}>Connection Error</Text>
+            <Text style={[styles.emptySub, { color: tc.textSec }]}>Check your internet and try again</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={loadProducts} activeOpacity={0.8}>
+              <Text style={styles.retryBtnText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
         ) : filtered.length === 0 ? (
           <View style={styles.center}>
             <Text style={{ fontSize: 48, marginBottom: 12 }}>😔</Text>
@@ -133,7 +147,9 @@ const styles = StyleSheet.create({
   chipActiveText: { color: '#fff' },
   center: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 17, fontWeight: '700', marginBottom: 4 },
-  emptySub: { fontSize: 13 },
+  emptySub: { fontSize: 13, marginBottom: 16 },
+  retryBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 28, paddingVertical: 11, borderRadius: 20 },
+  retryBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   count: { fontSize: 12, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   gridItem: { width: '47%' },

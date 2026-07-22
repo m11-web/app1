@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CartItem, Product, getCurrentPrice } from '../lib/types';
+
+const CART_STORAGE_KEY = 'rena_cart_items';
 
 interface CartContextType {
   items: CartItem[];
@@ -9,6 +12,7 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
+  cartReady: boolean;
 }
 
 const CartContext = createContext<CartContextType>({
@@ -19,10 +23,33 @@ const CartContext = createContext<CartContextType>({
   clearCart: () => {},
   totalItems: 0,
   totalPrice: 0,
+  cartReady: false,
 });
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [cartReady, setCartReady] = useState(false);
+
+  // Load cart from storage on mount
+  useEffect(() => {
+    AsyncStorage.getItem(CART_STORAGE_KEY)
+      .then(raw => {
+        if (raw) {
+          try {
+            const saved: CartItem[] = JSON.parse(raw);
+            setItems(saved);
+          } catch {}
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCartReady(true));
+  }, []);
+
+  // Persist cart whenever it changes (skip initial empty state before load)
+  useEffect(() => {
+    if (!cartReady) return;
+    AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items)).catch(() => {});
+  }, [items, cartReady]);
 
   const addItem = useCallback((product: Product, qty = 1) => {
     setItems(prev => {
@@ -62,7 +89,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const totalPrice = items.reduce((s, i) => s + getCurrentPrice(i.product) * i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQty, clearCart, totalItems, totalPrice }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQty, clearCart, totalItems, totalPrice, cartReady }}>
       {children}
     </CartContext.Provider>
   );

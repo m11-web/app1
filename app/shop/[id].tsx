@@ -38,7 +38,7 @@ export default function ProductDetailScreen() {
     if (!id) return;
     getProductById(id)
       .then(p => { setProduct(p); if (p) setSelectedImg(p.image_url); })
-      .catch(() => {})
+      .catch(() => setProduct(null))
       .finally(() => setLoading(false));
   }, [id]);
 

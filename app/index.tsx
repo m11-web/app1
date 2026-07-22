@@ -34,22 +34,26 @@ export default function HomeScreen() {
   const [banner, setBanner] = useState<AppBanner | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [netError, setNetError] = useState(false);
   const friday = isFriday();
 
-  useEffect(() => {
+  const loadData = () => {
+    setLoading(true);
+    setNetError(false);
     Promise.all([getProducts(), getBanners()])
       .then(([prods, banners]) => {
         setProducts(prods);
-        // Show popup only once per app session
         if (banners.length > 0 && !_bannerPopupShown) {
           _bannerPopupShown = true;
           setBanner(banners[0]);
           setShowPopup(true);
         }
       })
-      .catch(() => {})
+      .catch(() => setNetError(true))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { loadData(); }, []);
 
   const featured = products.slice(0, 6);
   const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
@@ -125,6 +129,14 @@ export default function HomeScreen() {
             </View>
             {loading ? (
               <View style={styles.center}><Spinner /></View>
+            ) : netError ? (
+              <View style={styles.center}>
+                <Text style={{ fontSize: 40, marginBottom: 8 }}>📡</Text>
+                <Text style={[styles.emptyText, { color: tc.textSec, marginBottom: 12 }]}>Network error. Check your connection.</Text>
+                <TouchableOpacity style={styles.retryBtn} onPress={loadData} activeOpacity={0.8}>
+                  <Text style={styles.retryBtnText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
             ) : featured.length === 0 ? (
               <View style={styles.center}>
                 <Text style={{ fontSize: 40, marginBottom: 8 }}>🌿</Text>
@@ -233,7 +245,9 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12, fontWeight: '600' },
   chipActiveText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   center: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { fontSize: 13 },
+  emptyText: { fontSize: 13, textAlign: 'center' },
+  retryBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20 },
+  retryBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   gridItem: { width: '47%' },
   bottomBanner: { borderRadius: 16, padding: 20, alignItems: 'center' },
